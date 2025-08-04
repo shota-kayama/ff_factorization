@@ -110,7 +110,7 @@ def berlekamp_algo(F,Q){
             for(L=1; L<length(F_3); L++){
                 H = H*F_3[L];
             }
-            F_1 = vector(length(F_1),F_1);
+            F_1 = ltov(F_1);
             F_1[J] = lmptop(F_1[J]); 
             H = lmptop(H);
             F_1[J] = sdivm(F_1[J],H,Q);
@@ -127,4 +127,4 @@ def berlekamp_algo(F,Q){
 }
 
 
-berlekamp_algo(x^7+2*x^5+x^4+2*x^3+x^2+x+1,5);
+berlekamp_algo(x^5+2*x^4+x^3+2*x^2+2,3);
