@@ -1,0 +1,130 @@
+/*入力多項式の入力次数までの係数を取り出してリスト表示する関数*/
+def co_list(F,M) {
+    B_0 = [];
+    for (I=0; I<=M-1; I++) {
+        B_0 = append(B_0,[coef(F,I,x)]);
+    }
+    return B_0;
+}
+/*ピーター・バールカンプ行列を生成する関数*/
+def peter_berlekamp_m(F,Q) {
+    M = deg(F,x);
+    B = matrix(M,M);
+    G_0 = 1;
+    B_0 = co_list(1,M);
+    G_1 = sremm(x^Q,F,Q);
+    B_1 = co_list(G_1,M);
+    B = B+newmat(M,M,[B_0,B_1]);
+    G_K = G_1;
+    for (I=1; I<=M-2; I++)
+    {
+        G_K = sremm((G_K)*(G_1),F,Q);
+        B_K = co_list(G_K,M);
+        B = B+rowx(newmat(M,M,[B_K]),0,I+1);
+    }
+    return B;
+}
+
+/*入力行列と同じサイズの単位行列を生成する関数*/
+def emat(B) {
+    E = newmat(size(B)[0],size(B)[1]);
+    for(I=0; I<=size(B)[0]-1; I++) {
+        for(K=0; K<=size(B)[1]-1; K++){
+            if(I==K){
+                E[I][K] = 1;
+            }
+        }
+    }
+    return E;
+}
+/*f簡約多項式を計算する関数*/
+def f_red_poly(B,Q) {
+    setmod_ff(Q);
+    M = size(B)[0];
+    E = emat(B);
+    B = B-E;
+    for(I=0; I<=M-1; I++){
+        for(J=0; J<=M-1; J++){
+            B[I][J] = simp_ff(B[I][J]);
+        }
+    }
+    for(I=0; I<=M-2; I++){
+        if(B[I][I]==0){
+            for(J=I+1; J<=M-1; J++){
+                if(B[I][J]!=0){
+                    B = colx(B,I,J);
+                    break;
+                }
+            }
+        }
+        if(B[I][I]==0){
+            continue;
+        }
+        B = colm(B,I,1/B[I][I]);
+        for(J=0; J<=M-1; J++){
+            if(J!=I){
+                B = cola(B,J,I,-B[I][J]);
+            }
+        }
+    }
+    B = E-B;
+    GL = [];
+    for(I=0; I<=M-1; I++){
+        if(B[I]!=vector(M)){
+            G = 0;
+            for(J=0; J<=M-1; J++){
+                G = G + B[I][J]*x^J;
+            }
+        }
+        else continue;
+        GL = append(GL,[G]);
+    }
+    return GL;
+}
+
+/*バールカンプアルゴリズム*/
+def berlekamp_algo(F,Q){
+    setmod_ff(Q);
+    B = peter_berlekamp_m(F,Q);
+    G = f_red_poly(B,Q);
+    K = length(G);
+    F_Q = [];
+    for(I=0; I<=Q-1; I++){
+        F_Q = append(F_Q,[simp_ff(I)]);
+    }
+    if(K == 1) return F;
+    else F_1 = [F];
+    for (I=2; I<=K; I++){
+        F_2 = [];
+        F_3 = [];
+        for(J=0; J<length(F_1); J++){
+            for(L=0; L<length(F_Q); L++){
+                A = gcd(F_1[J],G[I-1]-F_Q[L],Q);
+                A_i = simp_ff(1/coef(A,deg(A,x),x));
+                A = A*A_i;
+                if(deg(A,var(F))!=0){
+                    F_3 = append(F_3,[A]);
+                }
+            }
+            H = F_3[0];
+            for(L=1; L<length(F_3); L++){
+                H = H*F_3[L];
+            }
+            F_1 = vector(length(F_1),F_1);
+            F_1[J] = lmptop(F_1[J]); 
+            H = lmptop(H);
+            F_1[J] = sdivm(F_1[J],H,Q);
+            if(F_1[J]!=1){
+                F_3 = append(F_3,[F_1[J]]);
+            }
+            F_2 = append(F_2,F_3);
+        }
+        if(length(F_2)==K){
+            return F_2;
+        }
+        F_1 = F_2;
+    }
+}
+
+
+berlekamp_algo(x^7+2*x^5+x^4+2*x^3+x^2+x+1,5);

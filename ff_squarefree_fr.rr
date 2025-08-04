@@ -1,0 +1,97 @@
+/*有限体係数多項式をモニックにする*/
+def monic_poly(F,Q){
+    setmod_ff(Q);
+    if(coef(F,deg(F,x),x)!=1){
+        F =simp_ff(1/coef(F,deg(F,var(F)),var(F)))*F;
+    }
+    return F;
+}
+
+
+
+/*有限体の標数Qに対し、Q=P^LとなるP,Lを求める関数(素数の冪じゃない場合は[0,0]を返す)*/
+def find_pl(Q){
+    if (Q<=1) {
+        return [0,0];
+    }
+    P = 0;
+    for (I=2; I*I<=Q; I++) {
+        if (Q%I==0) {
+            P = I;
+            break;
+        }
+    }
+    if (P==0) {
+        return [Q, 1];
+    }
+    L = 0;
+    N = Q;
+    while (N%P==0) {
+        N = N / P;
+        L = L+1;
+    }
+    if (N==1) {
+        return [P, L];
+    } else {
+        return [0, 0];
+    }
+}
+
+def ff_diff(F,Q){
+    P = find_pl(Q)[0];
+    L = find_pl(Q)[1];
+    setmod_ff(P,L);
+    Result = 0;
+    for(I=1; I<=deg(F,x); I++){
+        Result = Result + simp_ff(I*coef(F,I,x))*x^(I-1);
+    }
+}
+
+/*有限体上の無平方分解*/
+def sf_fctr(F,Q){
+    P = find_pl(Q)[0];
+    L = find_pl(Q)[1];
+    setmod_ff(P,L);
+    F = monic_poly(F,Q);
+    F = simp_ff(F);
+    print(ff_diff(F,Q));
+    S = gcd(F,ff_diff(F,Q));
+    print(S);
+    F = lmptop(F);
+    S = lmptop(S);
+    T = sdivm(F,S,Q);
+    I = 1;
+    Result = [];
+    while(T!=1){
+        U = gcd(S,T,Q); U = lmptop(U);
+        F_i = sdivm(T,U,Q);
+        S = sdivm(S,U,Q);
+        S = lmptop(S);
+        I = I+1;
+        Result = append(Result,[F_i]);
+    }
+    S = simp_ff(S);
+    if(S!=1){
+        S_1 = 0;
+        for(J=0; J<=deg(S,x); J++){
+            S_1 = S_1 + coef(S,J,x)^(P^(L-1))*x^(J/P);
+        }
+        S = S_1;
+        print(S);
+        A = sf_fctr(S,Q);
+        K = length(A);
+        Result = ltov(Result);
+        while(I<=P*K){
+            Result[I-1] = 1;
+            I = I+1;
+        }
+        for(J=1; J<=K; J++){
+            Result[J*P] = A[J-1];
+        }
+        Result = vtol(Result);
+    }
+    return Result;
+}
+
+sf_fctr(x^6+2*x^3+3,9);
+
